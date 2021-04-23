@@ -64,17 +64,17 @@ function processAndFormat(txt) {
         firstChar = element.substring(0, 1);
         switch (firstChar) {
             case "1": //File Header
-                output[index] = "<h2>FILE HEADER</h2><table width='80%'><tr><th> Immediate Destination </th><th> Immediate Origin </th><th> File Creation Date </th><th> File Creation Time </th>" +
+                output[index] = "<h2>FILE HEADER</h2><table><tr><th> Immediate Destination </th><th> Immediate Origin </th><th> File Creation Date </th><th> File Creation Time </th>" +
                     "<th> Immediate Destination Name </th><th> Immediate Origin Name </th></tr><tr><td> " + element.substring(3, 13) + " </td><td> " + element.substring(13, 23) + " </td><td> " +
                     formatDate(element.substring(23, 29)) + " </td><td> " + element.substring(29, 31) + ":" + element.substring(31, 33) + " </td><td> " + element.substring(40, 63) + " </td><td> " + element.substring(63, 86) + "</tr></table>";
                 break;
             case "5": //Batch Header
                 batchNumber = Number(element.substring(87, 94));
-                output[index] = "<h2>BATCH " + batchNumber + " HEADER</h2><table width='80%'><tr><th>Company Name </th><th> Company Discretionary Data </th><th> Company Identification </th><th>" +
+                output[index] = "<h2>BATCH " + batchNumber + "</h2><table><tr><th>Company Name </th><th> Company Discretionary Data </th><th> Company Identification </th><th>" +
                     "Standard Entry Class </th><th> Company Entry Description </th><th> Company Descriptive Date </th><th> Effective Entry Date </th><th> Batch Number </th></tr>" +
                     " <tr class='batchHeader " + batchNumber + "'><td> " + element.substring(4, 20) + " </td><td> " + element.substring(20, 40) + " </td><td> " + element.substring(40, 50) +
                     " </td><td> " + element.substring(50, 53) + " </td><td> " + element.substring(53, 63) + " </td><td> " + element.substring(63, 69) +
-                    " </td><td title='" + element.substring(69, 75) + "' class='entryEffectiveDate'> " + formatDate(element.substring(69, 75)) + " </td><td> " + element.substring(87, 94) + "</td></tr></table><h2>ENTRY DETAIL RECORDS</h2><table width='80%'><tr><th>Tran Code </th><th> RDFI Identification</th><th>" +
+                    " </td><td title='" + element.substring(69, 75) + "' class='entryEffectiveDate'> " + formatDate(element.substring(69, 75)) + " </td><td> " + element.substring(87, 94) + "</td></tr></table><table><tr><th>Tran Code </th><th> RDFI Identification</th><th>" +
                     " RDFI Account Number </th><th> Amount </th><th> Individual ID </th><th> Individual Name </th></tr>";
 
                 break;
@@ -89,16 +89,16 @@ function processAndFormat(txt) {
             case "7": //Addenda record
                 output[index] = "";
                 if (prevFirstChar != "7") {
-                    output[index] += "<tr><td colspan='6'><table width='100%'><tr><th>Addenda Type Code</th><th>Payment related information</th><th>Addenda sequence number</th><th>Entry detail sequence number</th></tr>";
+                    output[index] += "<tr><td colspan='6'><table><tr><th>Addenda Type Code</th><th>Payment related information</th><th>Addenda sequence number</th><th>Entry detail sequence number</th></tr>";
                 }
-                output[index] += "<tr class='addenda " + batchNumber + "'><td class='addendaType'>" + element.substring(1, 3) + "</td><td>" + element.substring(3, 83).trim() + "</td><td>" + element.substring(83, 87) + "</td><td>" + element.substring(87, 94) + "</td></tr>";
+                output[index] += "<tr class='addenda " + batchNumber + "'><td class='addendaType'>" + element.substring(1, 3) + "</td><td>" + cleanse(element.substring(3, 83)) + "</td><td>" + element.substring(83, 87) + "</td><td>" + element.substring(87, 94) + "</td></tr>";
                 break;
             case "8": //Batch Control
                 output[index] = "";
                 if (prevFirstChar == "7") {
                     output[index] += "</table></td></tr>";
                 }
-                output[index] += "</table><h2>BATCH " + batchNumber + " CONTROL</h2><table width='80%'><tr><th>Entry/Addenda Count</th><th>Entry Hash</th><th>Total Debit Entry Amount</th><th>Total Credit Entry Amount</th><th>Company Identification" +
+                output[index] += "</table><table><tr><th>Entry/Addenda Count</th><th>Entry Hash</th><th>Total Debit Entry Amount</th><th>Total Credit Entry Amount</th><th>Company Identification" +
                     "</th></tr><tr class='" + batchNumber + "'><td class='batchEntryCount'>" + element.substring(4, 10) + "</td><td class='batchEntryHash'>" + element.substring(10, 20) + "</td><td class='dollarAmount batchDebitAmount'>$" + numberWithCommas((Number(element.substring(20, 32)) / 100).toFixed(2)) + "</td><td class='dollarAmount batchCreditAmount'>$" +
                     numberWithCommas((Number(element.substring(32, 44)) / 100).toFixed(2)) + "</td><td>" + element.substring(44, 54) + "</td></tr></table>";
                 break;
@@ -106,7 +106,7 @@ function processAndFormat(txt) {
                 secondChar = element.substring(1, 2);
                 switch (secondChar) {
                     case "0": //File Control
-                        output[index] = "<h2>FILE CONTROL</h2><table width='80%'><tr><th>Batch Count</th><th>Entry/Addenda Count</th><th>Entry Hash</th><th>Total Debit Entry Amount</th><th>Total Credit Entry Amount" +
+                        output[index] = "<h2>FILE CONTROL</h2><table><tr><th>Batch Count</th><th>Entry/Addenda Count</th><th>Entry Hash</th><th>Total Debit Entry Amount</th><th>Total Credit Entry Amount" +
                             "</th></tr><tr><td id='fileBatchCount'>" + element.substring(1, 7) + "</td><td id='fileEntryCount'>" + element.substring(13, 21) + "</td><td id='fileEntryHash'>" + element.substring(21, 31) + "</td><td class='dollarAmount' id='fileDebitAmount'>$" +
                             numberWithCommas((Number(element.substring(31, 43)) / 100).toFixed(2)) + "</td><td class='dollarAmount'id='fileCreditAmount'>$" + numberWithCommas((Number(element.substring(43, 55)) / 100).toFixed(2)) + "</td></tr></table>";
                         break;
@@ -528,4 +528,11 @@ function redactPersonallyIdentifiableInformation(className) {
         var element = elements[i];
         element.innerHTML = element.innerHTML.trim().replace(/.(?=.{4})/g, '*');
     }
+}
+
+function cleanse(text) {
+  text = text.replace(/\\/g, " ");
+  text = text.replace(/\*/g, " ");
+  text = text.trim();
+  return text;
 }
