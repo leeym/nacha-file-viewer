@@ -1,28 +1,29 @@
 table {
     border-collapse: collapse;
-	width: 80%;
 }
 
-table, th, td {
+table,
+th,
+td {
     border: 1px solid black;
 }
 
 tr:hover {
-	background-color: #EEAAEE;
+    background-color: #EEAAEE;
 }
 
 .dollarAmount {
-	text-align: right;
+    text-align: right;
 }
 
 .credit {
-	background-color: #FFDDDD;
+    background-color: #FFDDDD;
 }
 
 .debit {
-	background-color: #CCDDFF;
+    background-color: #CCDDFF;
 }
 
 th {
-	background-color: #DDFFFF;
+    background-color: #DDFFFF;
 }
