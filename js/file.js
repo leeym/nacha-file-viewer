@@ -106,8 +106,8 @@ function processAndFormat(txt) {
                 secondChar = element.substring(1, 2);
                 switch (secondChar) {
                     case "0": //File Control
-                        output[index] = "<h2>FILE CONTROL</h2><table><tr><th>Batch Count</th><th>Entry/Addenda Count</th><th>Entry Hash</th><th>Total Debit Entry Amount</th><th>Total Credit Entry Amount" +
-                            "</th></tr><tr><td id='fileBatchCount'>" + element.substring(1, 7) + "</td><td id='fileEntryCount'>" + element.substring(13, 21) + "</td><td id='fileEntryHash'>" + element.substring(21, 31) + "</td><td class='dollarAmount' id='fileDebitAmount'>$" +
+                        output[index] = "<h2>FILE CONTROL</h2><table><tr><th>Batch Count</th><th>Block Count</th><th>Entry/Addenda Count</th><th>Entry Hash</th><th>Total Debit Entry Amount</th><th>Total Credit Entry Amount" +
+                            "</th></tr><tr><td id='fileBatchCount'>" + element.substring(1, 7) + "</td><td id='fileBlockCount'>" + element.substring(7, 13) + "</td><td id='fileEntryCount'>" + element.substring(13, 21) + "</td><td id='fileEntryHash'>" + element.substring(21, 31) + "</td><td class='dollarAmount' id='fileDebitAmount'>$" +
                             numberWithCommas((Number(element.substring(31, 43)) / 100).toFixed(2)) + "</td><td class='dollarAmount'id='fileCreditAmount'>$" + numberWithCommas((Number(element.substring(43, 55)) / 100).toFixed(2)) + "</td></tr></table>";
                         break;
                     case "9": //Filler
@@ -218,15 +218,16 @@ function finalValidation() {
     validateBatchEntryCount();
     // validateEntryEffectiveDate();
     validateFileBatchCount();
+    validateFileBlockCount();
     validateFileEntryCount();
     validateFileRoutingNumberHash();
     validateBatchDebitAmount();
     validateBatchCreditAmount();
     validateFileDebitAmount();
     validateFileCreditAmount();
-    redactPersonallyIdentifiableInformation("routingNumber");
-    redactPersonallyIdentifiableInformation("accountNumber");
-    redactPersonallyIdentifiableInformation("fullName");
+    // redactPersonallyIdentifiableInformation("routingNumber");
+    // redactPersonallyIdentifiableInformation("accountNumber");
+    // redactPersonallyIdentifiableInformation("fullName");
 }
 ////////////////////////////////////END///////////////////////////////////////////////////////////////////////
 function lastTen(number) {
@@ -244,26 +245,26 @@ function validateBatchRoutingNumberHash() {
     //alert(routingNumbersToHash[lastEntry].parent.innerHTML);
     var numberOfBatches = getBatchNumber(routingNumbersToHash[lastEntry]);
 
-    var actual = 0;
+    var expected = 0;
     for (batch = 1; batch <= numberOfBatches; batch++) {
-        actual = 0;
+        expected = 0;
         for (var i = 0; i < routingNumbersToHash.length; i++) {
             currentEntryBatchNumber = getBatchNumber(routingNumbersToHash[i]);
             if (currentEntryBatchNumber === batch) {
-                actual += Number((routingNumbersToHash[i].innerHTML).substring(0, 8));
+                expected += Number((routingNumbersToHash[i].innerHTML).substring(0, 8));
             }
         }
-        actual = lastTen(actual)
+        expected = lastTen(expected)
         var batchEntryHashes = document.getElementsByClassName("batchEntryHash");
         for (hash = 0; hash < batchEntryHashes.length; hash++) {
             if (getBatchNumber(batchEntryHashes[hash]) === batch) {
                 var thisBatchEntryHash = batchEntryHashes[hash];
-                var expected = lastTen(Number(thisBatchEntryHash.innerHTML));
-                if (actual === expected) {
+                var actual = lastTen(Number(thisBatchEntryHash.innerHTML));
+                if (expected === actual) {
                     thisBatchEntryHash.style.backgroundColor = "#00FF00";
                 } else {
                     thisBatchEntryHash.style.backgroundColor = "#FF0000";
-                    alert("Batch Entry Hash for batch " + batch + " does NOT equal the total routing number hash.  This file cannot be processed as is.");
+                    alert("Batch Entry Hash [" + actual + "] for batch " + batch + " does NOT equal the total routing number hash [" + expected + "].  This file cannot be processed as is.");
                 }
             }
         }
@@ -282,25 +283,25 @@ function validateBatchEntryCount() {
     var addendaTypes = document.getElementsByClassName("addendaType");
 
     for (batch = 1; batch <= numberOfBatches; batch++) {
-        var actual = 0;
+        var expected = 0;
         for (var i = 0; i < routingNumbers.length; i++) {
             currentEntryBatchNumber = getBatchNumber(routingNumbers[i]);
             if (currentEntryBatchNumber === batch) {
-                actual++;
+                expected++;
             }
         }
         for (var i = 0; i < addendaTypes.length; i++) {
             currentEntryBatchNumber = getBatchNumber(addendaTypes[i]);
             if (currentEntryBatchNumber === batch) {
-                actual++;
+                expected++;
             }
         }
 
         for (i = 0; i < batchEntryCounts.length; i++) {
             if (getBatchNumber(batchEntryCounts[i]) === batch) {
                 var thisBatchEntryCount = batchEntryCounts[i];
-                var expected = Number(thisBatchEntryCount.innerHTML);
-                if (actual === expected) {
+                var actual = Number(thisBatchEntryCount.innerHTML);
+                if (expected === actual) {
                     thisBatchEntryCount.style.backgroundColor = "#00FF00";
                 } else {
                     thisBatchEntryCount.style.backgroundColor = "#FF0000";
@@ -318,8 +319,10 @@ function getBatchNumber(entry) {
     return entryBatchNumber;
 }
 
+
+var fileLines;
 function preliminaryValidation(txt) {
-    var fileLines = txt.split("\n");
+    fileLines = txt.split("\n");
     fileLines.forEach(function(element, index) {
         var lineNumber = index + 1;
         if (element.length !== 94 && lineNumber !== fileLines.length) { //ensure lines are 94 characters long, but newline counts as a character in JavaScript
@@ -332,7 +335,7 @@ function preliminaryValidation(txt) {
     var lastLine = fileLines.length - 1;
 
     if (lastLine % 10 !== 0) {
-        //alert("The number of lines in this file are not evenly divided by 10.  It is " + lastLine + " lines long.\nYou should fill lines with 9s to end with a number of lines that is an increment of 10.\nThis file should still process successfully, but it is not up to NACHA specs.");
+        alert("The number of lines in this file are not evenly divided by 10.  It is " + lastLine + " lines long.\nYou should fill lines with 9s to end with a number of lines that is an increment of 10.\nThis file should still process successfully, but it is not up to NACHA specs.");
     }
 }
 
@@ -366,15 +369,28 @@ function validateFileBatchCount() {
     }
 }
 
+function validateFileBlockCount() {
+    var fileBlockCount = document.getElementById("fileBlockCount");
+    var blocksToCompare = Number(fileBlockCount.innerHTML);
+    var fileBlocks = Math.ceil((fileLines.length - 1) / 10);
+    if (blocksToCompare !== fileBlocks) {
+        fileBlockCount.style.backgroundColor = "#FF0000";
+        alert("The number of blocks in the File Control Record is incorrect.  It states there are " + blocksToCompare + " blocks, but there are " + fileBlocks + " blocks.\nThis will cause problems.");
+        alert(txt)
+    } else {
+        fileBlockCount.style.backgroundColor = "#00FF00";
+    }
+}
+
 function validateFileEntryCount() {
     var fileEntryCount = document.getElementById("fileEntryCount");
-    var expected = Number(fileEntryCount.innerHTML);
+    var actual = Number(fileEntryCount.innerHTML);
     var routingNumbers = document.getElementsByClassName("routingNumber");
     var addendaTypes = document.getElementsByClassName("addendaType");
-    var actual = routingNumbers.length + addendaTypes.length
-    if (expected !== actual) {
+    var expected = routingNumbers.length + addendaTypes.length
+    if (actual !== expected) {
         fileEntryCount.style.backgroundColor = "#FF0000";
-        alert("The number of entries in the File Control Record is incorrect.  It states there are " + expected + " batches, but there are " + actual + " Entry Detail Records.\nThis will cause problems.");
+        alert("The number of entries in the File Control Record is incorrect.  It states there are " + actual + " batches, but there are " + expected + " Entry Detail Records.\nThis will cause problems.");
     } else {
         fileEntryCount.style.backgroundColor = "#00FF00";
     }
@@ -383,18 +399,18 @@ function validateFileEntryCount() {
 function validateFileRoutingNumberHash() {
     var routingNumbersToHash = document.getElementsByClassName("routingNumber");
 
-    var actual = 0;
+    var expected = 0;
     for (var i = 0; i < routingNumbersToHash.length; i++) {
-        actual += Number((routingNumbersToHash[i].innerHTML).substring(0, 8));
+        expected += Number((routingNumbersToHash[i].innerHTML).substring(0, 8));
     }
-    actual = lastTen(actual)
+    expected = lastTen(expected)
     var fileEntryHash = document.getElementById("fileEntryHash");
-    var expected = lastTen(Number(fileEntryHash.innerHTML));
-    if (actual === expected) {
+    var actual = lastTen(Number(fileEntryHash.innerHTML));
+    if (expected === actual) {
         fileEntryHash.style.backgroundColor = "#00FF00";
     } else {
         fileEntryHash.style.backgroundColor = "#FF0000";
-        alert("File Entry Hash does NOT equal the total routing number hash.  This file cannot be processed as is.");
+        alert("File Entry Hash [" + actual + "] does NOT equal the total routing number hash [" + expected + "].  This file cannot be processed as is.");
     }
 }
 
@@ -406,19 +422,19 @@ function validateBatchDebitAmount() {
     var batchDebitAmounts = document.getElementsByClassName("batchDebitAmount");
 
     for (batch = 1; batch <= numberOfBatches; batch++) {
-        var actual = 0;
+        var expected = 0;
         for (var i = 0; i < entriesToSum.length; i++) {
             currentEntryBatchNumber = getBatchNumber(entriesToSum[i]);
             if (currentEntryBatchNumber === batch && isDebit(entriesToSum[i])) {
-                actual += stripCurrency(entriesToSum[i].innerHTML); //https://stackoverflow.com/questions/10473994/javascript-adding-decimal-numbers-issue
+                expected += stripCurrency(entriesToSum[i].innerHTML); //https://stackoverflow.com/questions/10473994/javascript-adding-decimal-numbers-issue
             }
         }
 
         for (i = 0; i < batchDebitAmounts.length; i++) {
             if (getBatchNumber(batchDebitAmounts[i]) === batch) {
                 var thisBatchDebitAmount = batchDebitAmounts[i];
-                var expected = stripCurrency(thisBatchDebitAmount.innerHTML);
-                if (actual.toFixed(2) === expected.toFixed(2)) {
+                var actual = stripCurrency(thisBatchDebitAmount.innerHTML);
+                if (expected.toFixed(2) === actual.toFixed(2)) {
                     thisBatchDebitAmount.style.backgroundColor = "#00FF00";
                 } else {
                     thisBatchDebitAmount.style.backgroundColor = "#FF0000";
@@ -439,19 +455,19 @@ function validateBatchCreditAmount() {
 
 
     for (batch = 1; batch <= numberOfBatches; batch++) {
-        var actual = 0;
+        var expected = 0;
         for (var i = 0; i < entriesToSum.length; i++) {
             currentEntryBatchNumber = getBatchNumber(entriesToSum[i]);
             if (currentEntryBatchNumber === batch && !isDebit(entriesToSum[i])) {
-                actual = actual + stripCurrency(entriesToSum[i].innerHTML); //https://stackoverflow.com/questions/10473994/javascript-adding-decimal-numbers-issue
+                expected = expected + stripCurrency(entriesToSum[i].innerHTML); //https://stackoverflow.com/questions/10473994/javascript-adding-decimal-numbers-issue
             }
         }
 
         for (i = 0; i < batchCreditAmounts.length; i++) {
             if (getBatchNumber(batchCreditAmounts[i]) === batch) {
                 var thisBatchCreditAmount = batchCreditAmounts[i];
-                var expected = stripCurrency(thisBatchCreditAmount.innerHTML);
-                if (actual.toFixed(2) === expected.toFixed(2)) {
+                var actual = stripCurrency(thisBatchCreditAmount.innerHTML);
+                if (expected.toFixed(2) === actual.toFixed(2)) {
                     thisBatchCreditAmount.style.backgroundColor = "#00FF00";
                 } else {
                     thisBatchCreditAmount.style.backgroundColor = "#FF0000";
@@ -468,16 +484,16 @@ function validateFileDebitAmount() {
     var numberOfEntries = entriesToSum.length;
     var lastEntry = numberOfEntries - 1;
 
-    var actual = 0;
+    var expected = 0;
     for (var i = 0; i < entriesToSum.length; i++) {
         if (isDebit(entriesToSum[i])) {
-            actual += stripCurrency(entriesToSum[i].innerHTML); //https://stackoverflow.com/questions/10473994/javascript-adding-decimal-numbers-issue
+            expected += stripCurrency(entriesToSum[i].innerHTML); //https://stackoverflow.com/questions/10473994/javascript-adding-decimal-numbers-issue
         }
     }
 
     var fileDebitElement = document.getElementById("fileDebitAmount");
-    var expected = stripCurrency(fileDebitElement.innerHTML);
-    if (actual.toFixed(2) === expected.toFixed(2)) {
+    var actual = stripCurrency(fileDebitElement.innerHTML);
+    if (expected.toFixed(2) === actual.toFixed(2)) {
         fileDebitElement.style.backgroundColor = "#00FF00";
     } else {
         fileDebitElement.style.backgroundColor = "#FF0000";
@@ -490,16 +506,16 @@ function validateFileCreditAmount() {
     var numberOfEntries = entriesToSum.length;
     var lastEntry = numberOfEntries - 1;
 
-    var actual = 0;
+    var expected = 0;
     for (var i = 0; i < entriesToSum.length; i++) {
         if (!isDebit(entriesToSum[i])) {
-            actual += stripCurrency(entriesToSum[i].innerHTML); //https://stackoverflow.com/questions/10473994/javascript-adding-decimal-numbers-issue
+            expected += stripCurrency(entriesToSum[i].innerHTML); //https://stackoverflow.com/questions/10473994/javascript-adding-decimal-numbers-issue
         }
     }
 
     var fileCreditElement = document.getElementById("fileCreditAmount");
-    var expected = stripCurrency(fileCreditElement.innerHTML);
-    if (actual.toFixed(2) === expected.toFixed(2)) {
+    var actual = stripCurrency(fileCreditElement.innerHTML);
+    if (expected.toFixed(2) === actual.toFixed(2)) {
         fileCreditElement.style.backgroundColor = "#00FF00";
     } else {
         fileCreditElement.style.backgroundColor = "#FF0000";
